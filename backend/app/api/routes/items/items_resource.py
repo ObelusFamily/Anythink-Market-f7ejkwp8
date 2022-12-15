@@ -2,7 +2,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Response
 from starlette import status
-
+from loguru import logger
 from app.api.dependencies.items import (
     check_item_modification_permissions,
     get_item_by_slug_from_path,
@@ -24,6 +24,13 @@ from app.models.schemas.items import (
 from app.resources import strings
 from app.services.items import check_item_exists, get_slug_for_item
 from app.services.event import send_event
+import os
+import requests
+import json
+from app.core.config import get_app_settings
+OPEN_API_KEY = get_app_settings().OPEN_API_KEY
+OPEN_AI_HEADERS = {"Authorization": "Bearer {}".format(OPEN_API_KEY), "Content-Type": "application/json"}
+OPEN_AI_URL = 'https://api.openai.com/v1/images/generations'
 
 router = APIRouter()
 
@@ -68,6 +75,17 @@ async def create_new_item(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=strings.ITEM_ALREADY_EXISTS,
         )
+
+    item_image = item_create.image
+    if not item_image:
+        try:
+            data = { "prompt": item_create.title, "n": 1, "size": "256x256"}")
+            res_str = requests.post(OPEN_AI_URL, headers=OPEN_AI_HEADERS, json=data).content
+            res = json.loads(res_str)
+            item_image = res['data'][0]['url']
+        except error:
+            logger.info('failed to generate openai image', error)
+        
     item = await items_repo.create_item(
         slug=slug,
         title=item_create.title,
@@ -75,7 +93,7 @@ async def create_new_item(
         body=item_create.body,
         seller=user,
         tags=item_create.tags,
-        image=item_create.image
+        image=item_image
     )
     send_event('item_created', {'item': item_create.title})
     return ItemInResponse(item=ItemForResponse.from_orm(item))
