@@ -79,7 +79,7 @@ async def create_new_item(
     item_image = item_create.image
     if not item_image:
         try:
-            data = { "prompt": item_create.title, "n": 1, "size": "256x256"}")
+            data = { "prompt": item_create.title, "n": 1, "size": "256x256"}
             res_str = requests.post(OPEN_AI_URL, headers=OPEN_AI_HEADERS, json=data).content
             res = json.loads(res_str)
             item_image = res['data'][0]['url']
