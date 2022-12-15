@@ -18,6 +18,8 @@ class AppSettings(BaseAppSettings):
     title: str = "FastAPI example application"
     version: str = "0.0.0"
 
+    OPEN_API_KEY: str = ""
+
     database_url: PostgresDsn
     max_connection_count: int = 5
     min_connection_count: int = 5
